@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
   build:
@@ -37,3 +34,29 @@ jobs:
         run: |
           echo "Build output:"
           ls -la build
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: build
+    if: always()
+
+    steps:
+      - name: Send success notification
+        if: needs.build.result == 'success'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST \
+            -H 'Content-type: application/json' \
+            --data '{"text":"✅ CI Pipeline Successful\nRepository: devops-webapp\nBranch: main"}' \
+            "$SLACK_WEBHOOK_URL"
+
+      - name: Send failure notification
+        if: needs.build.result != 'success'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          curl -X POST \
+            -H 'Content-type: application/json' \
+            --data '{"text":"❌ CI Pipeline Failed\nRepository: devops-webapp\nBranch: main"}' \
+            "$SLACK_WEBHOOK_URL"
